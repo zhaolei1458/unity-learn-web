@@ -61,6 +61,13 @@ export const courses = [
     ],
   },
   {
+    id: 'modeling',
+    title: '建模与 Blender',
+    emoji: '🧊',
+    desc: '美术资源从哪来、Blender 建模、导入 Unity',
+    lessons: [], // 小节由 src/data/extra/modeling.js 装载
+  },
+  {
     id: 'prog',
     title: '进阶编程',
     emoji: '📘',
@@ -72,6 +79,13 @@ export const courses = [
       { id: 'prog-4', title: '单例模式' },
       { id: 'prog-5', title: '事件与委托' },
     ],
+  },
+  {
+    id: 'visuals',
+    title: '可视化脚本',
+    emoji: '🪄',
+    desc: '不写代码，拖节点搭游戏逻辑',
+    lessons: [], // 小节由 src/data/extra/visuals.js 装载
   },
   {
     id: 'ai',
@@ -842,6 +856,8 @@ import { lessons as _dialogueL, cards as _dialogueC } from './extra/dialogue.js'
 import { lessons as _xrL, cards as _xrC } from './extra/xr.js'
 import { lessons as _mathL, cards as _mathC } from './extra/math.js'
 import { lessons as _cinemachineL, cards as _cinemachineC } from './extra/cinemachine.js'
+import { lessons as _modelingL, cards as _modelingC } from './extra/modeling.js'
+import { lessons as _visualsL, cards as _visualsC } from './extra/visuals.js'
 
 courses.find(c => c.id === 'basics').lessons.push(..._basicsL)
 Object.assign(lessonCards, _basicsC)
@@ -901,3 +917,7 @@ courses.find(c => c.id === 'math').lessons.push(..._mathL)
 Object.assign(lessonCards, _mathC)
 courses.find(c => c.id === 'cinemachine').lessons.push(..._cinemachineL)
 Object.assign(lessonCards, _cinemachineC)
+courses.find(c => c.id === 'modeling').lessons.push(..._modelingL)
+Object.assign(lessonCards, _modelingC)
+courses.find(c => c.id === 'visuals').lessons.push(..._visualsL)
+Object.assign(lessonCards, _visualsC)

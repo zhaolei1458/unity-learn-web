@@ -5,6 +5,16 @@ export const lessons = [
   { id: 'render-8', title: '动手练：调出漂亮的画面' },
   { id: 'render-9', title: '手写 Shader：从零写一段 Shader' },
   { id: 'render-10', title: '渲染管线选型：Built-in / URP / HDRP' },
+  { id: 'render-11', title: '色彩空间与伽马' },
+  { id: 'render-12', title: '纹理深入：压缩、Mipmap、过滤' },
+  { id: 'render-13', title: '光照烘焙实战' },
+  { id: 'render-14', title: '反射与探针' },
+  { id: 'render-15', title: '阴影深入' },
+  { id: 'render-16', title: '半透明与混合' },
+  { id: 'render-17', title: '后处理实战：URP Volume 组合' },
+  { id: 'render-18', title: 'Shader 调试与性能' },
+  { id: 'render-19', title: '风格化渲染：卡通思路入门' },
+  { id: 'render-20', title: '渲染综合动手练' },
 ]
 
 export const cards = {
@@ -68,5 +78,111 @@ export const cards = {
       { name: 'Shader Graph / Volume', desc: 'URP 体系里的新工具，Built-in 没有' },
     ] },
     { type: 'quiz', question: '想给一个 Android 端的 2D 休闲游戏选渲染管线，最合适的是？', options: ['Built-in，教程最多最稳', 'URP，轻量、性能好、2D 和移动端首选', 'HDRP，画质最高'], answer: 1, tip: 'URP 就是为「轻量 + 性能 + 2D/移动端」设计的，是 2D 和 Android 的默认选择；HDRP 是给主机高端 PC 的电影级画质，Built-in 兼容最广但没有新特效。' },
+  ],
+  'render-11': [
+    { type: 'text', title: '线性 vs Gamma 与色彩校正', body: '同一张图、同一个场景，为什么在不同项目里颜色差这么多？多半是色彩空间（Color Space）的锅。这一课讲线性 vs Gamma、怎么设置、以及「颜色对不上」的排查。\n\n一、显示器与 sRGB：为什么会有 Gamma\n\n屏幕发光强度不等于数值——数值 128 的灰，实际看起来比「一半亮度」亮。这是物理特性（人眼对暗部更敏感，显示器也按这个规律输出），叫 Gamma 编码。照片、贴图存进文件时，都是按 sRGB（Gamma）存的——这是「人类看起来正常」的格式。\n\n二、Gamma 空间：老办法\n\nUnity 项目默认设置（或老项目）：Gamma Space。整个渲染链路都按「文件里的原始数值」算：\n· 贴图数值直接用\n· 光照计算也在 Gamma 数值上做\n· 结果：画面对比度偏高、光照数学上不「物理正确」，但简单\n\nGamma 空间的问题：数学上不准确。两张贴图相乘（光照 × 颜色），在 Gamma 空间里结果偏暗或偏怪——光越叠越脏。\n\n三、线性空间：物理正确的渲染\n\n线性空间（Linear Space）：先所有贴图从 sRGB 转成「线性数值」（去 Gamma），光照计算在线性空间做（数学上正确），最后输出时再转回 sRGB 给屏幕。\n\n结果：光照更真实、颜色更干净、高光过渡更自然。URP/HDRP 项目默认就是线性空间，也强烈推荐用。\n\n四、怎么设置\n\nEdit → Project Settings → Player → Other Settings → Color Space：\n· Gamma：老项目/兼容性优先\n· Linear：画面正确性优先（默认推荐）\n\n切 Linear 的影响：\n· 贴图：纹理导入设置里勾 sRGB 的贴图会自动转（颜色贴图勾 sRGB、法线贴图/数据贴图不勾）\n· 颜色：代码里用的 Color 也要在线性空间语义下理解\n· 后处理：Tonemapping 在 linear 下更「对」；Bloom 在 linear 下更自然\n\n五、色彩校正：让画面「对」的套路\n\n无论哪个空间，最终「看起来对不对」都要调：\n· 色彩空间选 Linear 是底子，后处理（render-7 的 Tonemapping / Color Adjustments）是表情\n· 皮肤、植被这类「人眼敏感色」最容易被空间错误弄脏——先确认空间、再调饱和度\n· 调色时先确认「贴图 sRGB 勾选」正确，否则贴图会「双重 Gamma」发灰\n\n六、常见坑\n\n· 同一张图两个项目颜色差很多 → 查 Color Space 设置，一个 Linear 一个 Gamma\n· 切 Linear 后画面整体变暗/发灰 → 正常！线性光照数学正确后对比度变了，用后处理 Tonemapping/Contrast 找回来\n· 贴图发灰发闷 → 贴图导入的 sRGB 勾选不对（颜色图没勾 sRGB，被当成线性数据直接采样）\n· 法线贴图勾了 sRGB → 法线数据被 Gamma 污染，光照全乱。数据贴图别勾 sRGB\n\n一句话总结：Gamma 空间是老办法、线性空间是物理正确；URP/HDRP 默认 Linear，贴图颜色勾 sRGB、数据贴图不勾；画面发灰发暗是空间的正常副作用，后处理找回——色彩空间定了，调色才有底。' },
+    { type: 'component', title: '色彩空间关键概念', items: [
+      { name: 'sRGB / Gamma', desc: '显示器输出规律，贴图按它存储' },
+      { name: 'Gamma 空间', desc: '老办法，简单但光照数学不准' },
+      { name: 'Linear 线性', desc: '物理正确的渲染，URP/HDRP 默认' },
+      { name: 'sRGB 勾选', desc: '颜色贴图勾，法线/数据贴图不勾' },
+      { name: 'Color Space 设置', desc: 'Player Settings 里切 Linear/Gamma' },
+    ] },
+    { type: 'quiz', question: '两张一样的颜色贴图，在 Gamma 项目和 Linear 项目里显示不一样，后者看起来发暗。最可能？', options: ['Linear 项目渲染数学更正确，画面自然偏暗，用 Tonemapping/Contrast 找回', '贴图坏了', '显示器设置问题'], answer: 0, tip: '线性空间的光照数学物理正确，和 Gamma 空间比对比度/亮度天然不同，画面偏灰偏暗是正常现象。色彩空间是「底子」，底子对了再用后处理调「表情」——这才是正确的调色流程。' },
+  ],
+  'render-12': [
+    { type: 'text', title: '纹理压缩、Mipmap、各向异性过滤', body: '贴图不只是「拖进去就用」。纹理压缩、Mipmap、各向异性过滤、尺寸——这些导入设置直接决定「画质 × 性能」的平衡。这一课把纹理导入面板上的关键项一次讲清。\n\n一、纹理压缩：省显存的大头\n\n原始纹理不压缩会吃掉海量显存（一张 2048×2048 的 RGBA 图 = 16MB）。导入面板的 Compression 决定压缩格式：\n· RGB / RGBA Compressed（DXT 系）：有损压缩，画质略降、显存减到 1/4~1/6\n· ASTC（移动端推荐）：压缩比好、画质不错，手机主流\n· 各平台单独设：纹理导入设置 → Platform 标签切平台。规则：颜色贴图用压缩、法线贴图用专用的法线压缩、UI/极重要贴图可不压缩\n\n二、Mipmap：远景不闪、省带宽\n\nMipmap = 一张图预先缩小成一串「金字塔」：原图、一半、四分之一……运行时远处物体自动用「小层」：\n· 好处：远景纹理不闪烁（摩尔纹）、采样缓存友好、省显存带宽\n· 代价：多占约 1/3 显存\n\n什么勾什么不勾：\n· 3D 物体、会缩放的 UI 元素：勾 Generate Mip Maps\n· 纯 2D 精灵（几乎不缩放）：可不勾（省显存）\n· 平面大纹理、贴屏幕的：不勾\n\n三、各向异性过滤（Anisotropic Filtering）：斜着看更清晰\n\n看地板、墙面这类「大角度斜视」的表面，默认采样会糊。Anisotropic 控这个：\n· 导入面板里 Filter Mode 选 Bilinear/Trilinear + Aniso Level 调 8/16\n· 或全局 Quality Settings → Anisotropic Textures 设 Forced On（全体强制 16x）\n\n代价极小、观感提升明显，3D 地面/墙建议开。\n\n四、纹理尺寸与 Power of Two\n\n· 尺寸尽量 2 的幂（256、512、1024、2048）：压缩格式、Mipmap、GPU 采样都更友好；非 2 的幂会额外处理、可能不支持压缩\n· 一张 4096 大图在手机上很吃显存：能拆小就拆小（图集可以解决，见 d2d-18）\n· Max Size 限制：导入面板 Max Size 控制「实际存多大」——原图 4096，Max Size 设 1024，运行时压成 1024 用。手机端常设 1024/2048\n\n五、其他关键项\n\n· Wrap Mode：Repeat（平铺，瓷砖地板用）／Clamp（边缘拉伸，UI 用）\n· Filter Mode：Point（像素风，锐利）／Bilinear（默认平滑）／Trilinear（Mipmap 层间过渡）\n· Read/Write：非必要不勾（开了解除 GPU 压缩，显存翻倍，还慢）\n\n六、常见坑\n\n· 远景纹理疯狂闪烁 → 3D 场景纹理没开 Mipmap。勾 Generate Mip Maps\n· 手机显存爆 → 纹理太大没压缩、Max Size 没限制。压缩 + 限制尺寸\n· 斜看地面糊成一片 → 各向异性没开。Aniso Level 8/16\n· 像素风糊了 → Filter Mode 设 Point，别用 Bilinear\n· 场景加载慢 → 纹理读盘太大。压缩、缩尺寸、做图集\n\n一句话总结：纹理导入面板三个大开关——Compression 压缩省显存、Generate Mip Maps 防远闪、Anisotropic 保斜视清晰；尺寸走 2 的幂、Max Size 限上限、Filter Mode 按风格选——这几个选对，画质和性能同时稳。' },
+    { type: 'component', title: '纹理导入关键设置', items: [
+      { name: 'Compression 压缩', desc: 'DXT / ASTC，省显存大头' },
+      { name: 'Generate Mip Maps', desc: '预生成缩小层级，防远闪' },
+      { name: 'Anisotropic 各向异性', desc: '斜视清晰度，8/16 级' },
+      { name: 'Max Size', desc: '限制实际存储尺寸，手机 1024/2048' },
+      { name: 'Power of Two', desc: '2 的幂尺寸，GPU 更友好' },
+      { name: 'Filter Mode', desc: 'Point 像素风 / Bilinear 平滑' },
+    ] },
+    { type: 'quiz', question: '场景里一块大地面，角色走近走到一定距离后表面开始疯狂闪烁（摩尔纹）。最对症的修复？', options: ['把地面贴图缩小', '勾上 Generate Mip Maps，让远处自动用小分辨率层级', '把地面换成一个更大的物体'], answer: 1, tip: '远景纹理闪烁是「高分辨率纹理在远处被欠采样」的典型症状。Mipmap 预生成递减分辨率层级，远处自动采样小层，闪烁和带宽问题一起解决——这是 3D 地面/大表面的标配。' },
+  ],
+  'render-13': [
+    { type: 'text', title: 'Lightmap、间接光与混合光照', body: '实时光照（每帧计算）好看但贵。烘焙（Bake）是把光照结果「烤」进一张光照贴图（Lightmap），运行时直接读取——静态物体便宜又好。这一课讲 Lightmap 怎么烤、间接光怎么调、混合光照怎么配。\n\n一、什么是光照贴图（Lightmap）\n\n烘焙 = 提前算好光照，存进一张图（每片表面的明暗），运行时贴上去：\n· 静态物体（不动的建筑、地形）→ 烘焙，省性能\n· 动态物体（玩家、可移动箱）→ 实时，不受 Lightmap\n· 优点：静态场景画面接近实时光，性能只花 1%\n\n二、烘焙流程四步\n\n1. 标记静态：选中要烘焙的物体，Inspector 右上角 Static 下拉选 Lightmap Static（或全静态）\n2. 摆灯光：Directional Light 设成 Mixed（或 Baked，见第四节），强度、颜色照常调\n3. 开烘焙：Window → Rendering → Lighting，点 Generate Lighting（或 Scene → Lighting 面板）\n4. 看结果：场景里静态物体的明暗「烤」进去了，灯光删掉画面也还在\n\n调整重烤：改了灯光/模型/材质，点 Generate Lighting 重新烤。烘焙慢是正常的（几秒到几分钟）。\n\n三、间接光：画面「透气」的关键\n\n直接光 = 太阳直接照到的亮面；间接光 = 光弹来弹去（墙反光、天光反射到暗部）。Lightmap 的重点是间接光：\n· Bounce 次数：Lighting 面板 → Lightmapping → Settings → Bounces（反弹次数）。1~2 次已够；调多画面更亮更「透气」，烘焙更慢\n· 间接强度（Indirect Intensity）：Light 组件上的间接光强度，想让暗部更亮就调它\n· 天空盒：天光会照进暗部。Skybox 颜色影响整体间接光色调\n\n四、混合光照（Mixed Lighting）：动静结合\n\n烘焙不覆盖动态物体，动态物体和静态场景的光怎么衔接？用 Mixed：\n· Baked：灯光只烘焙，动态物体不受这盏灯（动态物体要额外补光）\n· Mixed：静态物体烘焙 + 动态物体在附近时也有实时光（配合 Light Probe）\n· Realtime：纯实时，全动态但最贵\n\n默认方向光用 Mixed：静态建筑烤进 Lightmap，动态玩家走 Light Probe（光照探针）采样环境光。\n\n五、光照探针（Light Probe Group）\n\n动态物体补光：GameObject → Light → Light Probe Group，在场景里放几个探针（圈住玩法区域）。动态物体移动时自动采样周围探针的光。没有探针，动态物体在烘焙场景里就像「飘着的发光体」，光照不统一。\n\n六、常见坑\n\n· 改了灯重新烘焙没变化 → 忘记重新 Generate Lighting，或物体没标 Lightmap Static\n· 动态物体在烘焙场景里发黑/发飘 → 没放 Light Probe。放探针组\n· 烘焙结果发灰发暗 → 间接强度低、Bounce 太少。调 Indirect Intensity / Bounces\n· 烘焙太慢 → 场景太大、分辨率高。Lightmap 分辨率调低、分区域烤\n· 烘完全黑 → 灯光设成 Baked 但物体没标静态，或烘焙没生成。检查静态标记 + 重新 Generate\n\n一句话总结：烘焙 = 静态物体标记 Lightmap Static → 调灯 → Generate Lighting 把光烤进贴图；间接光管暗部透气、Mixed + Light Probe 让动态物体也吃环境光；改完记得重烤——静态场景省 99% 性能的好事，值得学会。' },
+    { type: 'component', title: '烘焙关键概念', items: [
+      { name: 'Lightmap Static', desc: '静态物体标记，烘焙的前置' },
+      { name: 'Generate Lighting', desc: '重新烘焙，改完必点' },
+      { name: '间接光 Bounce', desc: '反弹次数，管暗部透气' },
+      { name: 'Mixed 混合光照', desc: '静态烘焙 + 动态实时' },
+      { name: 'Light Probe', desc: '光照探针，动态物体采样环境光' },
+    ] },
+    { type: 'quiz', question: '烘焙完，静态建筑的光很好，但玩家角色走过去「一片黑、像飘着的」，和场景不融合。原因最可能是？', options: ['玩家没标 Lightmap Static', '场景里没放光照探针（Light Probe Group），动态物体采样不到环境光', '灯光颜色太暗'], answer: 1, tip: '动态物体不受 Lightmap，靠 Light Probe 采样环境光。没放探针，玩家就采样不到烘焙场景的光，自然发黑发飘。放一组 Light Probe 圈住玩法区域即可。' },
+  ],
+  'render-14': [
+    { type: 'text', title: '反射探针、环境反射与金属质感', body: '金属、水面、玻璃——这些材质「好看」的关键是反射：能看到周围环境的倒影。实时反射贵，Unity 用反射探针（Reflection Probe）便宜地模拟。这一课讲反射探针、环境反射、怎么调出金属质感。\n\n一、反射是怎么来的\n\nPBR 材质（render-5 讲过）里，金属几乎全靠「环境反射」显示自身：光滑表面把环境「映射」到物体上。渲染时引擎要回答：这个像素反射的是什么颜色？\n· 实时反射（反射探针每帧刷新）：贵\n· 烘焙反射（探针烤一次）：便宜\n· 天空盒兜底：没有探针时反射默认取天空盒\n\n二、反射探针：给环境拍快照\n\nGameObject → Light → Reflection Probe，放到场景里。它会以自己为中心，「拍」周围环境的全景图（Cube Map），范围内材质用这张图做反射。\n\n关键参数：\n· Type：Baked（烘焙一次，静态环境）／Realtime（实时刷新，贵）／Custom（手动画）\n· Box Size / Box Offset：反射有效范围\n· Importance：多个探针重叠时谁优先（重要的调高）\n· 放置原则：有金属、水面、玻璃的区域重点放；一个场景一般 1~几个探针，别放太多\n\n探针放好后：Lighting 面板 Generate Lighting 烘焙，金属物体就有反射了。\n\n三、环境反射（Environment Reflections）\n\n没有探针覆盖的地方，反射用「环境反射」兜底：\n· Lighting → Environment → Reflections：设 Skybox（天空盒）或 Custom（自定义 Cubemap）\n· 反射强度：Reflection Intensity（默认 1），想低调一点调 0.5\n\n环境反射是「最便宜的反射」——一张天空/环境图映射到所有表面。金属、水的质感起点。\n\n四、金属质感的调法（render-5 复习 + 反射）\n\n调一个像样的金属：\n1. 材质 Metallic 拉满 1：金属几乎全靠反射显示，自身颜色几乎不参与\n2. Roughness 拉低 0.05~0.2：越光滑反射越清晰\n3. 反射来源给足：场景放反射探针（或至少好天空盒），否则金属一片黑\n4. 反射模糊：Roughness 高了反射就「磨砂」——想要「拉丝金属」，Roughness 0.3~0.4 加一张 Roughness 贴图\n\n金属发黑的经典原因：反射环境是黑的（天空盒黑、没探针）——金属本身没有「自发光颜色」，全靠环境反射显示。场景越丰富，金属越好看。\n\n五、性能权衡\n\n· Baked 探针：烘焙一次，运行时零开销（推荐静态场景）\n· Realtime 探针：每帧/定时刷新，贵，只给关键动态反射用（镜子）\n· 探针数量：一个场景 1~3 个够，多了烘焙时间和内存暴涨\n· 反射的分辨率：探针 Resolution 别拉太高，128~256 够用\n\n六、常见坑\n\n· 金属全黑 → 没有反射来源：加反射探针或把天空盒设亮\n· 反射是天空盒、没有周围建筑 → 探针没覆盖到：调整探针 Box Size 或加探针\n· 反射一闪一闪 → Realtime 探针刷新太频繁。降低刷新（Refresh Mode）或改 Baked\n· 探针太多了卡 → 数量控制 + 分辨率控制，静态环境用 Baked\n\n一句话总结：反射 = 反射探针拍环境快照 + 环境反射兜底；金属质感 = Metallic 满 + Roughness 低 + 反射来源给足；探针 Baked 便宜、Realtime 贵、数量宁少勿多——环境丰富，金属才亮。' },
+    { type: 'component', title: '反射关键概念', items: [
+      { name: 'Reflection Probe', desc: '反射探针，拍环境全景快照' },
+      { name: 'Baked / Realtime', desc: '烘焙便宜 / 实时刷新贵' },
+      { name: '环境反射', desc: '天空盒 / 自定义 Cubemap 兜底' },
+      { name: 'Metallic 满 + Roughness 低', desc: '金属质感标配' },
+      { name: 'Importance', desc: '多探针重叠时谁优先' },
+    ] },
+    { type: 'quiz', question: '调了一个 Metallic=1 的金属球，结果整颗球是黑的，看不见周围环境。最可能的原因？', options: ['Roughness 太高了', '场景里没有反射来源（反射探针/天空盒），金属没有东西可反射', '金属度应该调成 0'], answer: 1, tip: '金属几乎不发自身颜色，全靠反射环境显示——环境是黑的，金属就是黑的。加一个反射探针（或亮天空盒），金属立刻「活」过来。这正是「环境越丰富、金属越好看」的原因。' },
+  ],
+  'render-15': [
+    { type: 'text', title: '阴影质量、柔和阴影与性能', body: '阴影是「立体感」的一半。但阴影也最吃性能、最容易出「锯齿/闪烁」。这一课讲阴影质量、柔和阴影、阴影距离和性能的平衡。\n\n一、阴影是怎么来的\n\nUnity 默认用阴影贴图（Shadow Map）：从光源角度渲染一张「谁挡谁」的深度图，画物体时查它判断是否在阴影里。关键参数都围绕这张图的「分辨率」和「采样」。\n\n二、阴影质量：分辨率与级联\n\nQuality Settings → Shadows：\n· Shadow Resolution：阴影贴图分辨率（Low/Medium/High/Ultra）。越高越清晰、越贵\n· 方向光的 Cascades（级联）：阴影贴图按距离分几层，近处用高分辨率、远处用低。Cascade 越多，近景阴影越清晰、越贵（默认 2~4）\n· Shadow Distance（阴影距离）：多远范围内的物体计算阴影。超出距离不投射阴影——降低这个值是省钱大头\n\n直射光阴影参数在 Quality Settings 全局调；点光/聚光阴影在灯光组件上（Resolution、Bias）。\n\n三、柔和阴影：阴影的「软硬」\n\n阴影越锐利越像「生硬贴纸」。柔和阴影几种做法：\n· 阴影本身的 PCF 采样：Quality Settings 里 Soft Shadows（PCF 3×3/5×5），采样周围几个像素做平均，边缘软一点（便宜，推荐）\n· 阴影遮罩 + 半影：物理上阴影边缘因光源大小有软有硬（Penumbra），实时里靠采样级数模拟。PCF 级数越高越软、越贵\n· 后期模糊：Screen Space 阴影或后处理里对阴影做模糊（较贵）\n\n需求套路：Shadow Resolution 拉高 + Soft Shadows 开 + Shadow Distance 按场景收紧——清晰又柔和的阴影就有了，性能也可控。\n\n四、阴影距离与性能\n\n· Shadow Distance 大 → 全场景阴影，远处也在算 → 贵。典型优化：距离 = 相机能看到的重要区域，其余不投影\n· 远物体阴影消失是「功能」不是 bug：让「近处清晰、远处消失」自然过渡，玩家根本注意不到\n· 多个方向光（多盏平行光）→ 每盏都算一张阴影贴图。少用平行光\n\n五、阴影 Bias：锯齿与漏光的调节\n\n阴影贴图有个经典瑕疵「阴影痤疮/麻点」（Shadow Acne，阴影面上像撒了芝麻）。灯光组件的 Bias 调节：\n· Shadow Bias / Normal Bias：把阴影判断稍微偏移，去掉麻点\n· 调大 Bias 阴影会「飘」（物体阴影悬空、变浅）；调小麻点回来。找到平衡点\n\n· 漏光（Light Leaking）：阴影接缝处漏进光线。多调 Shadow Depth Bias / 提高分辨率\n\n六、常见坑\n\n· 阴影满屏锯齿 → Shadow Resolution 太低。调高\n· 近处阴影糊成马赛克 → Cascades 太少。调高 Shadow Cascades\n· 场景卡顿 → Shadow Distance 太大，远处一堆阴影在算。收紧 Shadow Distance\n· 阴影「麻子脸」/物体阴影悬空 → Bias 调不好。微调 Shadow Bias（麻点多就调大、悬空就调小）\n· 动态物体没阴影 → 检查阴影模式（Cast Shadows / Receive Shadows）设置\n\n一句话总结：阴影质量三旋钮——Shadow Resolution（分辨率）、Cascades（近处清晰度）、Soft Shadows（柔和度），省钱靠 Shadow Distance 收紧；麻点调 Bias、卡顿减距离——阴影要「近清远淡」，清晰又便宜。' },
+    { type: 'component', title: '阴影关键概念', items: [
+      { name: 'Shadow Resolution', desc: '阴影贴图分辨率，越高越清晰越贵' },
+      { name: 'Cascades 级联', desc: '按距离分层，近景阴影清晰' },
+      { name: 'Soft Shadows', desc: 'PCF 采样，阴影边缘柔和' },
+      { name: 'Shadow Distance', desc: '阴影计算距离，省钱大头' },
+      { name: 'Bias', desc: '调麻点与悬空的平衡' },
+    ] },
+    { type: 'quiz', question: '场景一到阴影密集的地方就明显掉帧，查下来是远处几千个小物体的阴影都在实时计算。最直接的优化？', options: ['把 Shadow Distance 调小，超出距离的物体不投影', '把所有物体都标成静态然后烘焙', '把光源颜色调暗'], answer: 0, tip: '阴影距离是性能大头：每个投影物体都要往阴影贴图里渲染。Shadow Distance 收紧到「玩家视野的重要区域」，远处自然不投影——玩家根本察觉不到，性能立刻缓解。这是阴影优化的第一刀。' },
+  ],
+  'render-16': [
+    { type: 'text', title: '透明排序、混合模式与透明 Shader', body: '玻璃、水面、烟雾、UI——半透明是游戏里最「容易翻车」的渲染类型。透明排序、混合模式、渲染队列，这一课把透明 Shader 的门道讲清。\n\n一、为什么透明容易乱\n\n不透明物体先画，遮挡关系靠深度缓冲；半透明物体要「混」——后面物体的颜色和前面物体按透明度叠加。问题来了：叠加有顺序，画反了颜色就错。所以：\n· 半透明物体必须先画远的、再画近的（从后往前）\n· 画错顺序 = 玻璃后面看到的东西不对、冒出来的怪颜色\n· 引擎用「按距离排序」缓解，但两个透明物体穿插、或单个透明物体的内部面，顺序无解（这正是透明渲染最烦的地方）\n\n二、混合模式（Blend）：怎么叠\n\nBlend 指令告诉 GPU「新画的颜色和已有颜色怎么相加」：\n\n· 正常混合（alpha 透明）：Blend SrcAlpha OneMinusSrcAlpha——颜色×透明度 + 底下颜色×(1-透明度)，标准玻璃\n· 叠加/发光（Additive）：Blend One One——颜色直接相加，粒子、光效、火焰；叠得越多越亮，适合「发光」\n· 乘法（Multiplicative）：Blend DstColor Zero——越叠越暗，烟雾、暗色滤镜\n· 注意：混合模式是「对着整个物体」设的，不是每个像素随意选\n\n三、渲染队列（Render Queue）：画的先后\n\nShader 里声明物体排在哪队：\n\nSubShader\n{\n    Tags { "Queue" = "Transparent" }\n    // ...\n}\n\n· Geometry：不透明物体默认（0~2500）\n· Transparent：半透明物体（3000），在 Geometry 之后画（保证不透明先画完，透明再叠）\n· Overlay：最上层（4000），UI、特效\n· 半透明物体队列必须在 Geometry 后面，否则透明物体后面该画的不透明物体会漏画、看到穿帮\n\n四、Shader 里实现透明\n\nURP 的 Lit Shader 切 Surface Type 到 Transparent 就是透明材质（面板操作）。手写一个最简单的透明：\n\nShader "Custom/MyTransparent"\n{\n    SubShader\n    {\n        Tags { "Queue" = "Transparent" "RenderType" = "Transparent" }\n        Blend SrcAlpha OneMinusSrcAlpha   // alpha 混合\n        ZWrite Off                        // 不写深度（透明物体不该挡后面的透明）\n\n        Pass\n        {\n            CGPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            fixed4 frag (v2f i) : SV_Target\n            {\n                return fixed4(0.2, 0.6, 1.0, 0.5);   // 半透明蓝色，alpha 0.5\n            }\n            ENDCG\n        }\n    }\n}\n\n两个关键行：\n· Blend SrcAlpha OneMinusSrcAlpha：标准 alpha 混合\n· ZWrite Off：透明物体不写深度缓冲——不然远处透明物体会被近处透明物体错误遮挡\n\n五、顺序问题的实战对策\n\n· 两个透明物体穿插乱序 → 拆开（别让透明物体互相穿插），或用多个薄面\n· 透明物体的内部面排序乱 → 玻璃内部用「双面」处理（Cull Off），或把内部面做成单独不透明\n· 粒子烟雾顺序乱 → 粒子用 Additive 混合（不依赖顺序那么严）、或调渲染顺序\n· 排序死磕 → 把透明物体数量压到最少，场景主要靠不透明物体表达\n\n六、常见坑\n\n· 透明物体后面的东西不显示 → Queue 没设 Transparent，或 ZWrite 开着把后面挡了。Queue=Transparent + ZWrite Off\n· 半透明物体之间颜色错乱 → 排序问题，减少穿插、用 Additive 粒子\n· 玻璃透过去看到反色/怪色 → 混合模式选错，玻璃用 SrcAlpha OneMinusSrcAlpha\n· 透明物体有「黑边」/描边 → ZWrite Off 后描边算法要配套；或 alpha 抗锯齿问题\n\n一句话总结：透明 = 渲染队列排后面（Queue=Transparent）+ 混合模式定怎么叠（标准 alpha / 叠加 / 乘法）+ ZWrite Off 别挡人；排序是透明最大的敌人——能少用就少用、穿插拆开、粒子用 Additive——透明就稳了。' },
+    { type: 'component', title: '透明渲染关键概念', items: [
+      { name: 'Blend SrcAlpha OneMinusSrcAlpha', desc: '标准 alpha 混合，玻璃标配' },
+      { name: 'Additive 叠加', desc: 'Blend One One，发光粒子' },
+      { name: 'Queue=Transparent', desc: '排在 3000，不透明之后画' },
+      { name: 'ZWrite Off', desc: '透明物体不写深度，别挡后面' },
+      { name: '从后往前排序', desc: '透明渲染顺序，穿插会乱' },
+    ] },
+    { type: 'quiz', question: '一个半透明玻璃放在墙前，把墙后面的东西全挡住了、玻璃像不透明。最可能的问题？', options: ['玻璃的 alpha 值设置得太高了', 'Shader 没设 Queue=Transparent + ZWrite Off，透明物体按不透明方式画了', '灯光太亮'], answer: 1, tip: '透明物体必须排 Transparent 队列并 ZWrite Off：不写深度、在后面画。否则它按「不透明物体」的规则写深度、挡掉后面的一切，看起来就像不透明的墙。' },
+  ],
+  'render-17': [
+    { type: 'text', title: '后处理实战：URP Volume 完整配置', body: 'render-7 学过后处理效果清单，这一课做「实战配置」：在 URP 里从零搭一套完整、好看的画面——Bloom、色调、景深、泛光组合成一套风格。照着配一遍，比看十遍概念有用。\n\n一、准备：URP 后处理的架子\n\n1. URP 项目、相机勾 Post Processing、相机开 HDR（render-8 讲过，Bloom 吃 HDR 高光）\n2. 给相机挂 Volume（Add Component → Volume），勾 Is Global\n3. Volume 上 Add Override，加你要的效果组件\n\n二、风格目标先定\n\n先想好「这画面要什么感觉」，再动手。以「电影感黄昏城市」为例：暖调、高光带辉光、近景清晰远景虚化、四角微暗。目标定了，每个参数才有方向。\n\n三、逐效果配置（黄昏城市风）\n\n1. Tonemapping：Mode = ACES（电影曲线，高光柔和）。这一步是「电影感」的地基\n2. Color Adjustments：\n· Post Exposure 0.1~0.3：整体提亮一点（ACES 会压暗）\n· Contrast +10~20：找回对比\n· Saturation +5~10：找回鲜艳\n· Color Filter 微微暖色（偏橙黄）：给全画面定黄昏基调\n3. White Balance：Temperature +10~20（偏暖）、Tint 微调——和 Color Filter 一起把「黄昏感」拉满\n4. Bloom：\n· Intensity 0.3~0.8：辉光强度\n· Threshold 0.9~1.2：只有真正的高光才发光（霓虹灯、太阳、强光点）\n· Scatter 0.5~0.8：光晕扩散半径。调大辉光更柔\n5. Depth of Field（景深）：\n· Mode 选 Bokeh（或 Gaussian）\n· Focus Distance：聚焦主角所在距离（拉到主角身上）\n· Aperture 0.1~0.4：光圈越小景深越明显（背景越虚）\n· 效果：近景主角清晰、背景虚化，画面立刻「电影」\n6. Vignette：Intensity 0.2~0.4，四角微暗，收敛视线\n7. （可选）Chromatic Aberration 0.1~0.3：轻微紫边，镜头感。别拉满，糊\n8. （可选）Film Grain 0.1~0.3：轻微噪点，胶片质感\n\n四、看效果调参数\n\n· 每加一个效果就切 Game 视图看一眼，别一口气全加上\n· Bloom 开太高糊成奶油 → Threshold 调高、Intensity 调低\n· 景深把主角也虚了 → Focus Distance 没对准，或 Aperture 太小\n· 画面灰 → ACES 压的，Contrast/Saturation 找回来\n· 全部加起来变「脏」 → 每个效果减半，少即是多（render-7 的忠告）\n\n五、风格模板速查\n\n· 清新明亮：Post Exposure 高、Contrast 低、Saturation 略降、无景深、几乎不暗角\n· 赛博朋克：冷色底、高饱和青品、高对比、Bloom 拉满、轻微色差+噪点、Vignette 中\n· 电影大片：ACES + 暖调 + 景深 + Vignette + 轻微 Film Grain\n· 恐怖阴森：低曝光、高对比、冷色调、暗角拉满、低饱和\n\n六、常见坑\n\n· 调了没反应 → 相机没勾 Post Processing、HDR 没开、Volume 不是 Global\n· Bloom 全屏发光 → Threshold 太低，把 1 以下的光都点亮了。Threshold 设 1 以上\n· 景深闪烁 → 对焦物体移动，Focus Distance 写死会闪。用对焦目标（后处理脚本跟随）\n· 画面脏 → 效果堆太多。每个强度减半，宁缺毋滥\n\n一句话总结：后处理实战 = ACES 打底 + Color Adjustments 定调 + White Balance 加温 + Bloom 点高光 + 景深拉层次 + Vignette 收视线；先定风格再动手、每加一项看一眼、糊了就减——一套电影感画面就是这么「配」出来的。' },
+    { type: 'component', title: '后处理组合套路', items: [
+      { name: 'ACES 打底', desc: 'Tonemapping 电影曲线' },
+      { name: 'Color Adjustments', desc: '曝光 / 对比 / 饱和 / 色调定调' },
+      { name: 'White Balance', desc: '色温加暖加冷' },
+      { name: 'Bloom', desc: 'Threshold 1 以上，只点亮高光' },
+      { name: 'Depth of Field', desc: '景深，主角清晰背景虚' },
+      { name: 'Vignette', desc: '四角压暗收敛视线' },
+    ] },
+    { type: 'quiz', question: '配完后处理，整个画面高光区域全糊成一片白光、细节都没了。最该先调的？', options: ['把 Bloom 的 Threshold 调高，只让真正的高光发光', '把 Tonemapping 关掉', '把饱和度降到 0'], answer: 0, tip: '高光全糊 = Bloom 阈值太低，把大量普通亮度都当成高光点亮了。Threshold 调到 1 以上、Intensity 收小，只有真正的高光区域才有辉光——Bloom 的黄金规矩是「别让整屏都亮」。' },
+  ],
+  'render-18': [
+    { type: 'text', title: 'Shader 调试、变体与性能开销', body: 'Shader 出问题最恼火——编译不报错、画面却不正常。这一课讲 Shader 怎么调试、Shader 变体是什么、以及「这 Shader 贵不贵」怎么看。\n\n一、画面不对的排查顺序\n\n1. 是不是紫色/粉色？→ Shader 编译失败。查 Console 错误（路径、语法、变量名）\n2. 纯黑/纯白 → 变量没接住（Properties 和代码变量名不一致）、贴图没赋、输入结构错误\n3. 位置不对 → 顶点着色器输出错（SV_POSITION 写错）、坐标空间用错\n4. 颜色不对 → 光照/贴图采样逻辑错。逐段注释排查：先返回纯色、再叠贴图、再加光照\n\nDebug.Log 在 Shader 里不好用——Shader 是在 GPU 上跑的，十万个像素没法逐个 Log。手段换成「视觉化调试」。\n\n二、视觉化调试：把中间值变成颜色\n\nShader 调试的黄金手段：把中间计算结果直接输出成颜色，看画面「猜」。\n\n· 输出 UV：看 UV 对不对\n\nfixed4 frag (v2f i) : SV_Target\n{\n    return fixed4(i.uv, 0, 1);   // R=U、G=V，红绿渐变就是 UV\n}\n\n· 输出法线：看法线方向对不对\n\nreturn fixed4(normal * 0.5 + 0.5, 1);   // 法线映射回 0~1 显示\n\n· 输出时间/位置：验证数据有没有传进来\n· 注释法：把光照那段注释掉，返回纯颜色——如果颜色对，问题在光照；颜色错，问题在采样\n\n三、Shader 调试工具\n\n· Frame Debugger（Window → Analysis → Frame Debugger）：逐 DrawCall 看渲染状态，能看 Shader 用的什么 Pass、纹理、混合\n· RenderDoc / PIX（可选）：真机级图形调试，看中间缓冲\n· Unity 里给材质临时换个「诊断 Shader」（把变量直接输出颜色），比盲猜快得多\n\n四、Shader 变体（Variant）：性能杀手\n\nShader 一个 Pass 里 #pragma multi_compile / shader_feature 会让 Unity 生成多个「变体」（同一 Shader 的不同编译版本）。变体越多，打包越大、编译越慢、运行时切换可能卡顿：\n· shader_feature：只会编译「用到的」变体（省包体）\n· multi_compile：全部编译（功能多但包大）\n· 常见坑：项目 Shader 变体爆炸，Build 又慢又大。用 Shader 变体查看（Window → Shader → Shader Variants）检查，删掉没用到的 keyword\n· 简单 Shader 尽量少写 keyword，多用参数代替\n\n五、Shader 性能怎么看：贵在哪\n\nShader 的「贵」主要在片元着色器（每像素执行，像素数 × 指令数 = 总开销）：\n· 采样贴图（tex2D）次数：能少采样就少采样\n· 复杂计算（pow、sin、循环）：少在 frag 里算。能提前算的放 vert 或 CPU\n· 动态分支：GPU 分支效率低，尽量避免\n· 半精度/浮点：能 lowp/half 就少用 float（移动端）\n· 贴图尺寸大、采样多 = 带宽贵\n\n估算一句：frag 里「每加一条采样、每加一个大循环」，等于全屏幕每个像素都多算一遍——手机上是卡顿源。\n\n六、常见坑\n\n· 编译不报错画面却黑 → 变量名不一致（Properties 和代码）、语义写错。逐项查\n· 变体爆炸、Build 慢 → 用的 multi_compile 太多。换 shader_feature、清理 keyword\n· 手机上变慢 → frag 里采样/计算太多。减采样、用 half、删分支\n· 只会在某个平台出错 → 精度问题（float/half）、平台特性差异。用兼容写法\n\n一句话总结：Shader 调试 = 把中间值输出成颜色 + 注释法分段排查 + Frame Debugger 看状态；性能看变体数量（少写 keyword）和 frag 开销（少采样、少算）；变体爆炸减 shader_feature、手机卡顿砍 frag——看得懂中间值，Shader 就不玄了。' },
+    { type: 'component', title: 'Shader 调试与性能关键概念', items: [
+      { name: '视觉化调试', desc: '把中间值直接输出成颜色看' },
+      { name: '注释法', desc: '逐段注释定位问题段' },
+      { name: 'Frame Debugger', desc: '逐 DrawCall 看渲染状态' },
+      { name: '变体 Variant', desc: 'multi_compile 生成多版本，多了爆包' },
+      { name: 'frag 开销', desc: '每像素执行的指令，少采样少算' },
+    ] },
+    { type: 'quiz', question: '手写 Shader 编译通过，画面却是纯黑，完全看不到物体。最快的排查办法？', options: ['重装 Unity', '逐段注释，先返回一个纯色（比如红色）确认 Shader 有没有生效；再逐步叠加贴图和光照', '把所有 float 改成 half'], answer: 1, tip: 'Shader 纯黑常见于「变量没接住」或「采样/光照逻辑错」。先注释掉所有逻辑、直接 return 一个纯色——颜色对了说明 Shader 管线通，问题在后面的逻辑；颜色都不对就查变量名和语义。' },
+  ],
+  'render-19': [
+    { type: 'text', title: '风格化渲染：卡通思路入门', body: '卡通、水彩、像素、三渲二——不追求写实、追求「风格」的渲染统称非真实感渲染（NPR）。这一课讲最流行的卡通（Toon）渲染思路：色块、描边、硬阴影，入门就能上手。\n\n一、卡通渲染的核心：把「渐变」变成「色块」\n\n写实的光照是平滑渐变（暗部慢慢暗下去）；卡通渲染把渐变「量化」成几层色块：亮面一块、暗面一块、最暗处一块——像画师平涂，看着就是「卡通」。\n\n数学上 = 把光照强度做「阶梯化」（step / 分段）：\n\n// 卡通光照思路（片段级）\nfloat ndl = dot(normal, lightDir);        // 0~1 的漫反射强度\nfloat shade = step(0.3, ndl);             // 大于 0.3 亮、否则暗——两段色块\ncolor = baseColor * lerp(darkColor, brightColor, shade);\n\n· step：阈值一刀切，出来就是硬边界\n· 多几层 step 就是「三段式」（亮/中/暗），卡通质感更强\n\n二、描边：卡通角色的「线稿」\n\n卡通角色一般带描边（Outline）。三种做法：\n1. 膨胀法（最常见）：把模型沿着法线稍微「撑大」一点，用黑色材质，关掉深度写——变成一个黑壳包在外面。缺点：尖锐转角处会破绽\n2. 反向法线：复制一份模型，法线反过来画成黑边（Outlined shader 常这么做）\n3. 屏幕后处理描边：在整帧画面里找「边缘」（深度/法线不连续处）描线——不影响模型，通用但贵\n\n最实惠的是方法 1：新建一个材质用「描边 Shader」（沿法线外扩 + 纯黑 + Cull Front），给模型加一个加了 Outlined 的子物体。\n\n三、色块与渐变：cel shading 进阶\n\n· 光照分块做「硬边」还不够，暗部颜色要「干净」：卡通暗部不是纯黑，而是「变暗的固有色」（乘一个 0.6~0.8 的暗色），不糊\n· 高光做「硬高光」：卡通高光是「一块亮斑」，不是柔和光晕——把高光也 step 化，或干脆不要高光（角色材质常只留漫反射色块）\n· 明暗交界线加一点「边缘光」（Rim Light）：背光面一圈亮边，卡通角色特别出效果\n\n四、URP 里的实现路径\n\n· 最稳：Shader Graph 做卡通 Shader——加两个节点：NdotL（Normal Dot Light）再连一个 Step 节点，输出到 Base Color，就得到卡通色块。再配描边材质\n· 或找现成 Toon Shader 资产（Asset Store 一堆），理解思路后调参数\n· 三渲二（3D 渲染成 2D 动画感）：卡通色块 + 描边 + 抽帧（动画按低帧率播放模拟手绘感）\n\n五、风格完整度：色彩\n\n卡通风格的「风格」很大程度在颜色：\n· 色板：用低饱和、明快的固有色（写实用高饱和再受光，卡通直接平涂）\n· 天空盒/环境光调成「纯色 + 柔和」：别让写实环境光把卡通色块污染了\n· 后期：Bloom 关小（卡通一般不要大辉光）、对比度拉高、饱和度适中——干净利落的画面\n\n六、常见坑\n\n· 卡通色块边缘「脏」/糊 → step 阈值没调好，或环境光太强把色块边界柔化了。调 Threshold、压环境光\n· 描边破绽（转角处断线） → 膨胀法描边的固有毛病。用反向法线/后处理描边，或接受小瑕疵\n· 卡通角色发「塑料感」 → 高光太强太柔。卡通把高光 step 化或关掉\n· 画面灰灰的 → 卡通要「干净利落」：对比度拉高、暗部色块明确、别堆后处理\n\n一句话总结：卡通 = 光照阶梯化（step 出亮暗色块）+ 硬高光/无边光 + 描边（法线膨胀黑壳）+ 干净的色彩板；Shader Graph 里 NdotL → Step 就是入门写法，配描边材质就能出卡通片感——不写实，但要「画得像」。' },
+    { type: 'component', title: '卡通渲染关键概念', items: [
+      { name: '色块量化', desc: 'step 把渐变切成亮暗几层' },
+      { name: 'step 阈值', desc: 'NdotL → Step，卡通核心' },
+      { name: '描边 Outline', desc: '法线膨胀黑壳，线稿感' },
+      { name: '硬高光', desc: '高光也 step 化，别发柔光' },
+      { name: 'Rim Light 边缘光', desc: '背光面一圈亮边' },
+      { name: 'NPR', desc: '非真实感渲染统称' },
+    ] },
+    { type: 'quiz', question: '想做出卡通角色那种「亮面一块、暗面一块、边界干脆」的硬边色块光照，最核心的手段？', options: ['把光照强度做 step 阶梯化，用阈值把渐变切成色块', '把光照强度拉得越高越好', '完全去掉光照，全部用自发光'], answer: 0, tip: '卡通渲染的灵魂就是把平滑光照「量化」成色块：dot(normal, light) 得到 0~1 强度，step 按阈值一刀切，亮暗两段色块——这就是 cel shading 的核心。' },
+  ],
+  'render-20': [
+    { type: 'text', title: '综合动手练：搭一个画面完整好看的场景', body: '🎯 任务目标：把渲染课的功夫串起来，亲手搭一个「画面完整好看」的小场景——光照（主光+补光+天空盒）、材质（PBR 金属度粗糙度 + 法线贴图）、后处理（ACES + Bloom + 景深 + 暗角）、反射（反射探针给金属）。每个调整都能说出它管什么。\n\n📦 前置要求：先学完 render-5（光照模型与材质）、render-8（动手练调画面）、render-13（烘焙）、render-14（反射探针）、render-17（后处理实战）。\n\n📋 动手步骤：\n\n第 1 步｜建场景：URP 模板新建工程。搭一个小「展示台」：一块地面（Plane）+ 几个形状各异的物体（球、圆柱、立方体、环），加上两三个小建筑（Cube 拼），留出主角位。摆开，别挤成一团。\n\n第 2 步｜定光影基调：主光 Directional Light 从斜上方 45° 打，Intensity 0.9~1.1、暖白。补光一盏低强度（0.2~0.4）冷色从对面补上来——冷暖对比让画面立刻「有戏」。天空盒换成内置 Skybox，环境光从天空盒取色（render-8 复习）。\n\n第 3 步｜材质分工：给四个物体各做一个材质，故意拉开差距：\n· 球：Metallic 1、Roughness 0.05——抛光金属球（要见反射）\n· 圆柱：Metallic 0、Roughness 0.7——磨砂塑料\n· 立方体：Metallic 0.2、Roughness 0.5 + 一张法线贴图（渲染出砖缝质感，render-6 讲过，导入设 Normal Map）\n· 地面：Metallic 0、Roughness 0.9 + 大纹理（Tiling 平铺）\n做完对比：金属亮、塑料哑、砖墙有凹凸、地面粗。\n\n第 4 步｜给金属上反射：在金属球旁放一个 Reflection Probe（GameObject → Light → Reflection Probe），Box 范围圈住球。Lighting → Generate Lighting 烘焙（render-13/14 复习）。金属球现在能「照出」周围环境——靠近建筑的地方，球上能看到建筑轮廓。\n\n第 5 步｜后处理一套：相机勾 Post Processing + HDR，挂 Global Volume，按 render-17 的「电影感」配方配：\n· Tonemapping ACES\n· Color Adjustments：Post Exposure 0.2、Contrast 15、Saturation 10、微暖色 Filter\n· Bloom：Intensity 0.4、Threshold 1.1（只让高光发光）\n· Depth of Field：Focus Distance 对准主角、Aperture 适中（背景虚化）\n· Vignette 0.3\n配完看一眼：画面有统一色调、金属发光、背景虚化——「电影感」就出来了。\n\n第 6 步｜加一点「高光点」让 Bloom 有东西可发：放一盏 Point Light 颜色偏暖、Intensity 调高（2~3）、加一个小自发光物体（材质 Emission 打开、颜色亮一点）——Bloom 才有「光点」可辉。\n\n第 7 步｜自检与微调：按 render-18 的排查思路过一遍——画面灰就 Contrast、暗就 Post Exposure、金属黑就查反射来源、Bloom 糊就 Threshold 拉高。\n\n✅ 验收清单：\n能 □ 主光+补光+天空盒让画面有统一色调，暗部不死黑（render-8 标准）\n能 □ 四个材质差异明显：金属亮有反射、塑料哑、砖墙有法线凹凸、地面粗糙\n能 □ 反射探针让金属球能「照出」周围环境\n能 □ 后处理整套生效：ACES 曲线、高光 Bloom、背景景深、四角暗角\n能 □ 每个调过的参数都能说出它管什么\n\n🕳 常见卡壳：\n· 金属球还是黑 → 反射探针没覆盖/没烘焙。放探针 + Generate Lighting；或天空盒先调亮兜底\n· 法线贴图没凹凸感 → 导入 Texture Type 设 Normal Map、Normal Strength 调 1~2；确认材质槽位拖对\n· Bloom 全屏糊 → Threshold 太低。提到 1 以上\n· 画面发灰 → ACES 压的，Contrast + Saturation 找回来，别关 ACES\n· 景深把主角也虚了 → Focus Distance 没对准主角，调到主角距离\n\n一句话总结：一个好看的场景 = 光影定基调（主光补光天空盒）+ 材质拉开层次（金属/塑料/砖/地）+ 反射探针喂金属 + 后处理套电影感（ACES/Bloom/景深/暗角）；每步一个验收点、每个参数知道管什么——渲染综合动手练就过关了。' },
+    { type: 'quiz', question: '金属球调了半天还是黑，周围环境却很亮。最可能的缺失环节？', options: ['金属球的材质 Metallic 还没设成 1', '反射探针没放或没烘焙，金属没有环境可反射', '后处理 Bloom 没开'], answer: 1, tip: '金属几乎全靠环境反射显示（render-14 的核心）。环境再亮，没有反射探针（或没烘焙）金属就采样不到——加一个 Reflection Probe 覆盖到金属球、Generate Lighting 烘焙，金属立刻「照出」周围。' },
   ],
 }

@@ -21,7 +21,7 @@ function stageStats(ids) {
 }
 
 const path = [
-  { step: '① 打地基', ids: ['basics', 'math', 'motion', 'logic', 'art', 'prog'], practice: '练手：搭场景 / 滚球接金币 / 计分逻辑 / 继承重构' },
+  { step: '① 打地基', ids: ['basics', 'math', 'motion', 'logic', 'art', 'modeling', 'prog', 'visuals'], practice: '练手：搭场景 / 滚球接金币 / 计分逻辑 / 继承重构' },
   { step: '② 会玩法', ids: ['ai', 'perf', 'arch', 'anim', 'd2d'], practice: '练手：巡逻敌人 / 对象池 / 2D接水果' },
   { step: '③ 上强度', ids: ['render', 'net', 'editor', 'platform', 'ecs', 'debug', 'cinemachine'], practice: '前两步吃透再上来，概念偏硬' },
   { step: '④ 进深水', ids: ['aiadv', 'procgen', 'shadergraph', 'physadv', 'audio', 'inputadv', 'leveldesign'], practice: '' },
