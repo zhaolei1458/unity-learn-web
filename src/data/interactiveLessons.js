@@ -23,7 +23,7 @@ export const interactiveLessons = {
       observe: {
         hint: '拨一下开关，看看四个面板各自是干什么的',
         camera: { pos: [0, 2, 6], target: [0, 0, 0] },
-        async setup(scene, camera, THREE, { markDone }) {
+        async setup(scene, camera, THREE, { markDone, canvasRef }) {
           // 场景：四个方块代表四个面板，带标签
           const panels = [
             { name: '场景视口', color: 0x42a5f5, pos: [-2, 0, 0], desc: '看 3D 世界', icon: '🖥️' },
@@ -236,7 +236,7 @@ export const interactiveLessons = {
         camera: { pos: [0, 2, 6], target: [0, 0, 0] },
         successTitle: '认识 Unity 界面·达成',
         successText: '你刚才点对了！场景视口是 Unity 里看 3D 世界的地方，后面你会经常用到它。',
-        async setup(scene, camera, THREE, { markDone }) {
+        async setup(scene, camera, THREE, { markDone, canvasRef }) {
           // 打乱顺序的四个面板
           const panelData = [
             { name: '场景视口', color: 0x42a5f5, desc: '看 3D 世界' },

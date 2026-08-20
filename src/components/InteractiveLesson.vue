@@ -230,7 +230,7 @@ onBeforeUnmount(() => {
 .il-top { display: flex; align-items: center; gap: 16px; padding: 12px 0; }
 .il-top .back { border: none; background: none; color: #4a9eff; cursor: pointer; font-size: 14px; }
 .il-top .title { font-size: 16px; color: #333; font-weight: 500; }
-.canvas-wrap { width: 100%; height: calc(100vh - 200px); border-radius: 12px; overflow: hidden; background: #f0f0f0; }
+.canvas-wrap { position: relative; width: 100%; height: calc(100vh - 200px); border-radius: 12px; overflow: hidden; background: #f0f0f0; }
 .canvas-wrap canvas { display: block; width: 100%; height: 100%; }
 .il-progress { display: flex; justify-content: center; gap: 8px; margin: 12px 0 4px; }
 .il-progress .dot { width: 10px; height: 10px; border-radius: 50%; background: #d0d0d0; transition: all 0.3s; }
