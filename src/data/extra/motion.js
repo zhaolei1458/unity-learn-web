@@ -1,18 +1,18 @@
 // 进阶内容：motion 让世界动起来（motion-8/9/10）
 export const lessons = [
-  { id: 'motion-8', title: 'Time 与帧率' },
-  { id: 'motion-9', title: '实例化 Instantiate' },
-  { id: 'motion-10', title: '销毁与延迟调用' },
-  { id: 'motion-11', title: '动手练：让小球滚动接金币' },
-  { id: 'motion-12', title: 'Rigidbody 深入：质量/阻力/约束/插值/连续碰撞' },
-  { id: 'motion-13', title: '力与运动控制：AddForce/速度/跳跃' },
-  { id: 'motion-14', title: '移动方式全对比：四种移动怎么选' },
-  { id: 'motion-15', title: '触发器深入：Stay/Exit 与碰撞信息' },
-  { id: 'motion-16', title: 'Animator 动画控制初识' },
-  { id: 'motion-17', title: '音效播放基础' },
-  { id: 'motion-18', title: '物体生命周期管理：常驻物体' },
-  { id: 'motion-19', title: '游戏循环与计时' },
-  { id: 'motion-20', title: '动手练：会动会响会收集的小 Demo' },
+  { id: 'motion-8', title: 'Time 与帧率', type: 'interactive' },
+  { id: 'motion-9', title: '实例化 Instantiate', type: 'interactive' },
+  { id: 'motion-10', title: '销毁与延迟调用', type: 'interactive' },
+  { id: 'motion-11', title: '动手练：让小球滚动接金币', type: 'interactive' },
+  { id: 'motion-12', title: 'Rigidbody 深入：质量/阻力/约束/插值/连续碰撞', type: 'interactive' },
+  { id: 'motion-13', title: '力与运动控制：AddForce/速度/跳跃', type: 'interactive' },
+  { id: 'motion-14', title: '移动方式全对比：四种移动怎么选', type: 'interactive' },
+  { id: 'motion-15', title: '触发器深入：Stay/Exit 与碰撞信息', type: 'interactive' },
+  { id: 'motion-16', title: 'Animator 动画控制初识', type: 'interactive' },
+  { id: 'motion-17', title: '音效播放基础', type: 'interactive' },
+  { id: 'motion-18', title: '物体生命周期管理：常驻物体', type: 'interactive' },
+  { id: 'motion-19', title: '游戏循环与计时', type: 'interactive' },
+  { id: 'motion-20', title: '动手练：会动会响会收集的小 Demo', type: 'interactive' },
 ]
 export const cards = {
   'motion-8': [

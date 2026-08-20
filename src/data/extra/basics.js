@@ -8,12 +8,12 @@ export const lessons = [
   { id: 'basics-12', title: '预制体 Prefab 深入' },
   { id: 'basics-13', title: '空物体与场景组织' },
   { id: 'basics-14', title: '场景视图操作进阶' },
-  { id: 'basics-15', title: '游戏视图与运行调试' },
-  { id: 'basics-16', title: '项目设置初识' },
-  { id: 'basics-17', title: '给物体上色' },
-  { id: 'basics-18', title: '第一个 UI 按钮' },
-  { id: 'basics-19', title: '简单动画初体验' },
-  { id: 'basics-20', title: '综合小练习：搭一个会动的小世界' },
+  { id: 'basics-15', title: '游戏视图与运行调试', type: 'interactive' },
+  { id: 'basics-16', title: '项目设置初识', type: 'interactive' },
+  { id: 'basics-17', title: '给物体上色', type: 'interactive' },
+  { id: 'basics-18', title: '第一个 UI 按钮', type: 'interactive' },
+  { id: 'basics-19', title: '简单动画初体验', type: 'interactive' },
+  { id: 'basics-20', title: '综合小练习：搭一个会动的小世界', type: 'interactive' },
 ]
 export const cards = {
   'basics-7': [

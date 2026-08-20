@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>层级与父子关系 — 组装小飞机</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, "Microsoft YaHei", sans-serif; background: #f0f0f0; overflow: hidden; height: 100vh; }
+  canvas { display: block; }
+
+  /* ── 进度指示 ── */
+  .progress { position: fixed; top: 16px; right: 16px; display: flex; gap: 8px; z-index: 10; }
+  .progress .dot { width: 10px; height: 10px; border-radius: 50%; background: #d0d0d0; transition: background 0.3s; }
+  .progress .dot.active { background: #4a9eff; }
+  .progress .dot.done { background: #4caf50; }
+
+  /* ── 下一步按钮 ── */
+  .next-btn {
+    position: fixed; bottom: 24px; right: 24px; z-index: 10;
+    padding: 10px 24px; border-radius: 10px; border: none;
+    background: #e0e0e0; color: #aaa; font-size: 15px; cursor: not-allowed;
+    transition: all 0.3s;
+  }
+  .next-btn.enabled { background: #4a9eff; color: #fff; cursor: pointer; }
+  .next-btn.enabled:hover { background: #3a8eef; transform: translateY(-1px); }
+
+  /* ── 阶段一：开关面板 ── */
+  .toggle-panel {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10;
+    background: #fff; border-radius: 14px; padding: 14px 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 14px;
+  }
+  .toggle-label { font-size: 14px; color: #555; user-select: none; }
+  .toggle-switch {
+    width: 48px; height: 26px; border-radius: 13px; background: #ccc; cursor: pointer;
+    position: relative; transition: background 0.3s; flex-shrink: 0;
+  }
+  .toggle-switch.on { background: #4a9eff; }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    transition: transform 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .toggle-switch.on::after { transform: translateX(22px); }
+  .phase1-hint {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10;
+    font-size: 13px; color: #aaa; transition: opacity 0.3s;
+  }
+
+  /* ── 阶段一：对比面板 ── */
+  .compare-panel {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 10;
+    background: #fff; border-radius: 12px; padding: 12px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; gap: 20px; align-items: center;
+    font-size: 13px; color: #666;
+  }
+  .compare-item { display: flex; align-items: center; gap: 6px; }
+  .compare-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ── 阶段二：示范面板 ── */
+  .demo-overlay {
+    position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,0.3);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .demo-box {
+    background: #fff; border-radius: 16px; padding: 28px 36px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15); text-align: center; max-width: 440px;
+  }
+  .demo-box h3 { font-size: 17px; color: #333; margin-bottom: 8px; }
+  .demo-box p { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.6; }
+  .demo-box .play-btn {
+    padding: 10px 32px; border-radius: 8px; border: none;
+    background: #4a9eff; color: #fff; font-size: 14px; cursor: pointer;
+  }
+  .demo-box .play-btn:hover { background: #3a8eef; }
+
+  /* ── 阶段二：步骤指示 ── */
+  .step-indicator {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 25;
+    background: rgba(255,255,255,0.95); border-radius: 10px; padding: 8px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-size: 13px; color: #555;
+    display: none;
+  }
+  .step-indicator .step-num { color: #4a9eff; font-weight: 600; }
+
+  /* ── 阶段三：题目面板 ── */
+  .task-panel {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+    background: #fff; border-radius: 12px; padding: 12px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center;
+  }
+  .task-panel .task-text { font-size: 14px; color: #333; }
+  .task-panel .task-hint { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+  /* ── 阶段三：组装进度 ── */
+  .assemble-bar {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 10;
+    background: #fff; border-radius: 10px; padding: 8px 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: #666;
+  }
+  .assemble-bar .part-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 6px;
+    font-size: 12px; color: #fff; transition: all 0.4s;
+  }
+  .assemble-bar .part-tag.done { opacity: 1; transform: scale(1.05); }
+  .assemble-bar .part-tag.pending { opacity: 0.3; }
+  .assemble-bar .part-tag .check { display: none; }
+  .assemble-bar .part-tag.done .check { display: inline; }
+
+  /* ── 过关弹窗 ── */
+  .success-overlay {
+    position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .success-box {
+    background: #fff; border-radius: 16px; padding: 32px 40px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15); text-align: center; max-width: 420px;
+  }
+  .success-box .badge { font-size: 48px; margin-bottom: 12px; }
+  .success-box h2 { font-size: 18px; color: #333; margin-bottom: 8px; }
+  .success-box .insight {
+    background: #f0f7ff; border-radius: 10px; padding: 12px 16px;
+    font-size: 13px; color: #4a6a8a; line-height: 1.6; margin: 12px 0 16px; text-align: left;
+  }
+  .success-box .ok-btn {
+    padding: 8px 28px; border-radius: 8px; border: none;
+    background: #4caf50; color: #fff; font-size: 14px; cursor: pointer;
+  }
+
+  /* ── 完成页 ── */
+  .finish-overlay {
+    position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .finish-box {
+    background: #fff; border-radius: 16px; padding: 32px 40px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15); text-align: center; max-width: 420px;
+  }
+  .finish-box .badge { font-size: 56px; margin-bottom: 12px; }
+  .finish-box h2 { font-size: 20px; color: #333; margin-bottom: 8px; }
+  .finish-box p { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.7; }
+  .finish-box .insight {
+    background: #f0f7ff; border-radius: 10px; padding: 14px 18px;
+    font-size: 13px; color: #4a6a8a; line-height: 1.7; margin-bottom: 18px; text-align: left;
+  }
+  .finish-box .btn-row { display: flex; gap: 10px; justify-content: center; }
+  .finish-box .restart-btn {
+    padding: 8px 24px; border-radius: 8px; border: 2px solid #4a9eff;
+    background: #fff; color: #4a9eff; font-size: 14px; cursor: pointer;
+  }
+  .finish-box .home-btn {
+    padding: 8px 24px; border-radius: 8px; border: none;
+    background: #4a9eff; color: #fff; font-size: 14px; cursor: pointer;
+  }
+
+  /* ── 零件名称标签 ── */
+  .part-label {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: rgba(255,255,255,0.92); border-radius: 6px; padding: 3px 10px;
+    font-size: 12px; font-weight: 500; white-space: nowrap;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    transform: translate(-50%, -100%); margin-top: -6px;
+    transition: opacity 0.3s;
+  }
+
+  /* ── 飞行轨迹线 ── */
+  .trail {
+    position: absolute; pointer-events: none; z-index: 3;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(76, 175, 80, 0.3);
+    transform: translate(-50%, -50%);
+  }
+</style>
+</head>
+<body>
+
+<!-- 进度 -->
+<div class="progress">
+  <div class="dot active" id="dot1"></div>
+  <div class="dot" id="dot2"></div>
+  <div class="dot" id="dot3"></div>
+</div>
+
+<!-- 下一步 -->
+<button class="next-btn" id="nextBtn" onclick="goNext()">下一步 →</button>
+
+<!-- ═══ 阶段一 ═══ -->
+<div class="toggle-panel" id="togglePanel">
+  <span class="toggle-label">拨一下：零件会不会跟着机身飞？</span>
+  <div class="toggle-switch" id="toggleSwitch" onclick="toggleParent()"></div>
+</div>
+<div class="phase1-hint" id="phase1Hint">← 拨动开关看看 →</div>
+<div class="compare-panel" id="comparePanel" style="display:none">
+  <div class="compare-item">
+    <div class="compare-dot" style="background:#4caf50"></div>
+    <span>拨之前：零件各站各的</span>
+  </div>
+  <div class="compare-item">
+    <div class="compare-dot" style="background:#4a9eff"></div>
+    <span>拨之后：零件跟着机身飞</span>
+  </div>
+</div>
+
+<!-- ═══ 阶段二 ═══ -->
+<div class="demo-overlay" id="demoOverlay" style="display:none">
+  <div class="demo-box">
+    <h3>👀 看一看怎么组装</h3>
+    <p>下面会演示：把零件一个个装到机身上，<br>装完整架飞机一起飞走——<br>这就是「父子关系」的威力。</p>
+    <button class="play-btn" onclick="startDemoAnim()">▶ 播放动画</button>
+  </div>
+</div>
+<div class="step-indicator" id="stepIndicator">
+  <span class="step-num" id="stepNum">1</span> / 4 · <span id="stepName">安装左翼</span>
+</div>
+
+<!-- ═══ 阶段三 ═══ -->
+<div class="task-panel" id="taskPanel" style="display:none">
+  <div class="task-text">🎯 把零件拖到机身上，组装一架完整的飞机</div>
+  <div class="task-hint">拖到正确位置自动吸附 · 装完飞机就飞</div>
+</div>
+<div class="assemble-bar" id="assembleBar" style="display:none">
+  <span>已装：</span>
+  <span class="part-tag pending" id="tag-wing-l" style="background:#42a5f5">左翼 <span class="check">✓</span></span>
+  <span class="part-tag pending" id="tag-wing-r" style="background:#42a5f5">右翼 <span class="check">✓</span></span>
+  <span class="part-tag pending" id="tag-tail" style="background:#ff9800">机尾 <span class="check">✓</span></span>
+  <span class="part-tag pending" id="tag-nose" style="background:#ab47bc">机头 <span class="check">✓</span></span>
+</div>
+
+<!-- 过关 -->
+<div class="success-overlay" id="successOverlay" style="display:none">
+  <div class="success-box">
+    <div class="badge">🎉</div>
+    <h2>飞机组装完成！</h2>
+    <div class="insight">
+      你刚才做的事，在引擎里叫「设置父级」。<br>
+      每个零件都是机身的「孩子」——机身飞哪，零件跟到哪。<br><br>
+      <strong>记住这个感觉：</strong>父子关系就是「打包」——<br>
+      把零件打包进机身，机身一动，零件全跟着动。
+    </div>
+    <button class="ok-btn" onclick="closeSuccess()">继续 →</button>
+  </div>
+</div>
+
+<!-- 完成 -->
+<div class="finish-overlay" id="finishOverlay" style="display:none">
+  <div class="finish-box">
+    <div class="badge">🏆</div>
+    <h2>这一节学完了！</h2>
+    <p>你已经掌握了「层级与父子关系」的核心。</p>
+    <div class="insight">
+      <strong>💡 你刚才学到了：</strong><br>
+      · 把零件挂到机身上，就建立了「父子关系」<br>
+      · 父亲移动时，所有孩子会自动跟着移动<br>
+      · 这在引擎里叫「设置父级 SetParent」<br>
+      · 组装复杂的物体时，父子关系是最基本的组织方式
+    </div>
+    <div class="btn-row">
+      <button class="restart-btn" onclick="restart()">🔄 再来一遍</button>
+      <button class="home-btn" onclick="goHome()">🏠 回首页</button>
+    </div>
+  </div>
+</div>
+
+<!-- 标签容器 -->
+<div id="labelContainer"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ════════════════════════════════════════════
+   场景
+   ════════════════════════════════════════════ */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf0f0f0);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 5, 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+document.body.prepend(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI / 2.05;
+controls.minDistance = 4;
+controls.maxDistance = 18;
+controls.target.set(0, 0.5, 0);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+sun.position.set(5, 8, 5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+scene.add(sun);
+
+// 地面
+const gnd = new THREE.Mesh(
+  new THREE.PlaneGeometry(30, 30),
+  new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.9 })
+);
+gnd.rotation.x = -Math.PI / 2; gnd.position.y = -0.01; gnd.receiveShadow = true;
+scene.add(gnd);
+
+const grid = new THREE.GridHelper(30, 60, 0xd0d0d0, 0xd0d0d0);
+grid.material.opacity = 0.3; grid.material.transparent = true;
+scene.add(grid);
+
+/* ════════════════════════════════════════════
+   飞机零件
+   ════════════════════════════════════════════ */
+function box(c, w, h, d) {
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color: c, roughness: 0.35, metalness: 0.05 })
+  );
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+const fuselage = box(0x4caf50, 3, 0.6, 0.8);
+fuselage.position.set(0, 0.8, 0);
+scene.add(fuselage);
+fuselage.add(box(0x388e3c, 3.02, 0.1, 0.82)); // 装饰条
+
+const PARTS = [
+  { name: '左翼', c: 0x42a5f5, w: 2, h: 0.12, d: 0.7,
+    init: [-4, 0.5, 1.8], target: [0, 0, 0.7], tag: 'tag-wing-l' },
+  { name: '右翼', c: 0x42a5f5, w: 2, h: 0.12, d: 0.7,
+    init: [4.5, 0.5, -1], target: [0, 0, -0.7], tag: 'tag-wing-r' },
+  { name: '机尾', c: 0xff9800, w: 0.12, h: 0.9, d: 1.0,
+    init: [-3.5, 0.5, 2.5], target: [-1.7, 0, 0], tag: 'tag-tail' },
+  { name: '机头', c: 0xab47bc, w: 0.7, h: 0.5, d: 0.5,
+    init: [4.5, 0.3, 2], target: [1.8, 0, 0], tag: 'tag-nose' },
+];
+
+const parts = PARTS.map(d => {
+  const mesh = box(d.c, d.w, d.h, d.d);
+  mesh.position.set(...d.init);
+  scene.add(mesh);
+  return {
+    mesh, name: d.name,
+    initPos: new THREE.Vector3(...d.init),
+    targetLocal: new THREE.Vector3(...d.target),
+    tag: d.tag, attached: false,
+    // 动画状态
+    _flyT: 0, _flying: false, _flyFrom: null, _flyTo: null, _flyReverse: false,
+  };
+});
+
+/* ════════════════════════════════════════════
+   标签
+   ════════════════════════════════════════════ */
+const labelBox = document.getElementById('labelContainer');
+const labels = parts.map(p => {
+  const el = document.createElement('div');
+  el.className = 'part-label';
+  el.textContent = p.name;
+  el.style.borderLeft = `3px solid #${p.mesh.material.color.getHexString()}`;
+  labelBox.appendChild(el);
+  return el;
+});
+
+function updateLabels() {
+  parts.forEach((p, i) => {
+    if (p.attached) { labels[i].style.opacity = '0'; return; }
+    const v = new THREE.Vector3();
+    p.mesh.getWorldPosition(v); v.y += 0.7;
+    v.project(camera);
+    labels[i].style.left = ((v.x * .5 + .5) * innerWidth) + 'px';
+    labels[i].style.top  = ((-v.y * .5 + .5) * innerHeight) + 'px';
+    labels[i].style.opacity = '1';
+  });
+}
+
+/* ════════════════════════════════════════════
+   状态
+   ════════════════════════════════════════════ */
+let phase = 1, nextOn = false;
+let parented = false, flyActive = false, flyT = 0;
+const F0 = fuselage.position.clone();
+
+let demo = false, demoT = 0;
+const DEMO_DUR = 5.5;
+
+let attached = 0, allDone = false, takingOff = false, takeoffT = 0;
+
+let dragging = false, dragPart = null;
+const dragPlane = new THREE.Plane(), dragOff = new THREE.Vector3();
+const rc = new THREE.Raycaster(), mv = new THREE.Vector2();
+
+/* ════════════════════════════════════════════
+   UI 引用
+   ════════════════════════════════════════════ */
+const $next    = document.getElementById('nextBtn');
+const $togPnl  = document.getElementById('togglePanel');
+const $tog     = document.getElementById('toggleSwitch');
+const $hint    = document.getElementById('phase1Hint');
+const $compare = document.getElementById('comparePanel');
+const $demoOvl = document.getElementById('demoOverlay');
+const $stepInd = document.getElementById('stepIndicator');
+const $stepNum = document.getElementById('stepNum');
+const $stepName= document.getElementById('stepName');
+const $task    = document.getElementById('taskPanel');
+const $bar     = document.getElementById('assembleBar');
+const $success = document.getElementById('successOverlay');
+const $finish  = document.getElementById('finishOverlay');
+const dots = ['dot1','dot2','dot3'].map(id => document.getElementById(id));
+
+function refreshDots() {
+  dots.forEach((d, i) => {
+    d.className = 'dot';
+    if (i + 1 < phase) d.classList.add('done');
+    else if (i + 1 === phase) d.classList.add('active');
+  });
+}
+function setNext(on) {
+  nextOn = on;
+  $next.className = on ? 'next-btn enabled' : 'next-btn';
+}
+
+/* ════════════════════════════════════════════
+   通用：零件飞行动画
+   ════════════════════════════════════════════ */
+function flyPart(p, from, to, dt, speed = 2.5) {
+  if (!p._flying) return false;
+  p._flyT += dt * speed;
+  const t = Math.min(p._flyT, 1);
+  const ease = 1 - Math.pow(1 - t, 3);
+  p.mesh.position.lerpVectors(from, to, ease);
+  p.mesh.rotation.x = ease * Math.PI * 2;
+  p.mesh.rotation.z = ease * Math.PI;
+  if (t >= 1) {
+    p._flying = false;
+    p.mesh.rotation.set(0, 0, 0);
+    return true; // 完成
+  }
+  return false;
+}
+
+/* ════════════════════════════════════════════
+   阶段一：观察
+   拨开关 → 零件翻着跟头飞到机身上
+   再拨回来 → 零件散开飞回原位
+   装好后 → 机身绕圈飞
+   ════════════════════════════════════════════ */
+window.toggleParent = function() {
+  parented = !parented;
+  $tog.classList.toggle('on', parented);
+  $hint.style.opacity = '0';
+
+  if (parented) {
+    parts.forEach(p => {
+      const target = new THREE.Vector3().copy(p.targetLocal);
+      fuselage.localToWorld(target);
+      p._flyFrom = p.mesh.position.clone();
+      p._flyTo = target;
+      p._flyT = 0; p._flying = true; p._flyReverse = false;
+    });
+    flyActive = true; flyT = 0;
+  } else {
+    parts.forEach(p => {
+      if (p.mesh.parent === fuselage) {
+        const wp = new THREE.Vector3();
+        p.mesh.getWorldPosition(wp);
+        fuselage.remove(p.mesh); scene.add(p.mesh);
+        p.mesh.position.copy(wp);
+      }
+      p._flyFrom = p.mesh.position.clone();
+      p._flyTo = p.initPos.clone();
+      p._flyT = 0; p._flying = true; p._flyReverse = true;
+    });
+    flyActive = false;
+  }
+
+  // 拨过一次后显示对比提示
+  setTimeout(() => { $compare.style.display = 'flex'; }, 800);
+  setNext(true);
+};
+
+function updatePhase1(dt) {
+  // 零件飞行动画
+  parts.forEach(p => {
+    if (!p._flying) return;
+    const done = flyPart(p, p._flyFrom, p._flyTo, dt);
+    if (done && !p._flyReverse && !p.attached) {
+      p.mesh.position.copy(p.targetLocal);
+      fuselage.add(p.mesh);
+      p.attached = true;
+    }
+  });
+
+  // 机身飞行
+  if (flyActive && parts.every(p => !p._flying)) {
+    flyT += dt;
+    fuselage.position.x = F0.x + Math.sin(flyT * 0.8) * 2.5;
+    fuselage.position.y = F0.y + Math.sin(flyT * 1.2) * 0.6 + 0.5;
+    fuselage.position.z = Math.cos(flyT * 0.6) * 2;
+    fuselage.rotation.z = Math.sin(flyT * 1.5) * 0.15;
+    fuselage.rotation.y = flyT * 0.8;
+  } else if (!flyActive && !parented) {
+    fuselage.position.lerp(F0, 0.04);
+    fuselage.rotation.z *= 0.95;
+    fuselage.rotation.y *= 0.95;
+  }
+}
+
+/* ════════════════════════════════════════════
+   阶段二：示范
+   ════════════════════════════════════════════ */
+window.startDemoAnim = function() {
+  $demoOvl.style.display = 'none';
+  $stepInd.style.display = 'block';
+  demo = true; demoT = 0;
+  resetAll();
+  fuselage.position.copy(F0); fuselage.rotation.set(0, 0, 0);
+};
+
+const SCHEDULE = [
+  { s: 0.05, e: 0.20, idx: 0, name: '安装左翼' },
+  { s: 0.22, e: 0.38, idx: 1, name: '安装右翼' },
+  { s: 0.40, e: 0.54, idx: 2, name: '安装机尾' },
+  { s: 0.56, e: 0.70, idx: 3, name: '安装机头' },
+];
+
+function updateDemo(dt) {
+  if (!demo) return;
+  demoT += dt;
+  const t = Math.min(demoT / DEMO_DUR, 1);
+
+  // 更新步骤指示
+  const cur = SCHEDULE.find(s => t >= s.s && t < s.e) || SCHEDULE[SCHEDULE.length - 1];
+  const idx = SCHEDULE.indexOf(cur) + 1;
+  $stepNum.textContent = idx;
+  $stepName.textContent = t >= 0.8 ? '飞机起飞！' : cur.name;
+
+  // 零件飞入
+  SCHEDULE.forEach(({ s, e, idx: pi }) => {
+    const p = parts[pi];
+    if (t < s || p.attached) return;
+    const prog = Math.min((t - s) / (e - s), 1);
+    const ease = 1 - Math.pow(1 - prog, 3);
+    if (prog < 1) {
+      const tw = p.targetLocal.clone(); fuselage.localToWorld(tw);
+      p.mesh.position.lerpVectors(p.initPos, tw, ease);
+      p.mesh.rotation.x = ease * Math.PI * 2;
+      p.mesh.rotation.z = ease * Math.PI;
+    } else if (!p.attached) {
+      p.mesh.position.copy(p.targetLocal);
+      p.mesh.rotation.set(0, 0, 0);
+      fuselage.add(p.mesh);
+      p.attached = true; attached++;
+    }
+  });
+
+  // 起飞
+  if (t > 0.8) {
+    const fp = Math.min((t - 0.8) / 0.2, 1);
+    const ease = 1 - Math.pow(1 - fp, 2);
+    fuselage.position.y = F0.y + ease * 3;
+    fuselage.position.x = F0.x + ease * 2;
+    fuselage.rotation.z = ease * -0.15;
+    fuselage.rotation.y = ease * 0.5;
+  }
+
+  if (t >= 1) {
+    demo = false;
+    $stepInd.style.display = 'none';
+    setNext(true);
+  }
+}
+
+/* ════════════════════════════════════════════
+   阶段三：实践
+   ════════════════════════════════════════════ */
+function attachPart(p) {
+  p.attached = true;
+  p.mesh.position.copy(p.targetLocal);
+  p.mesh.rotation.set(0, 0, 0);
+  fuselage.add(p.mesh);
+  attached++;
+  document.getElementById(p.tag).className = 'part-tag done';
+  if (attached >= parts.length) {
+    allDone = true;
+    setTimeout(() => { takingOff = true; takeoffT = 0; }, 600);
+  }
+}
+
+function onDown(e) {
+  if (phase !== 3 || allDone) return;
+  mv.x = (e.clientX / innerWidth) * 2 - 1;
+  mv.y = -(e.clientY / innerHeight) * 2 + 1;
+  rc.setFromCamera(mv, camera);
+  const hits = rc.intersectObjects(parts.filter(p => !p.attached).map(p => p.mesh));
+  if (!hits.length) return;
+  dragPart = parts.find(p => p.mesh === hits[0].object);
+  if (!dragPart) return;
+  dragging = true; controls.enabled = false;
+  const cd = new THREE.Vector3(); camera.getWorldDirection(cd);
+  dragPlane.setFromNormalAndCoplanarPoint(cd.negate(), dragPart.mesh.position);
+  const h = new THREE.Vector3(); rc.ray.intersectPlane(dragPlane, h);
+  dragOff.copy(dragPart.mesh.position).sub(h);
+}
+
+function onMove(e) {
+  if (!dragging || !dragPart) return;
+  mv.x = (e.clientX / innerWidth) * 2 - 1;
+  mv.y = -(e.clientY / innerHeight) * 2 + 1;
+  rc.setFromCamera(mv, camera);
+  const h = new THREE.Vector3(); rc.ray.intersectPlane(dragPlane, h);
+  dragPart.mesh.position.copy(h.add(dragOff));
+  dragPart.mesh.position.y = 0.5;
+}
+
+function onUp() {
+  if (!dragging || !dragPart) return;
+  dragging = false; controls.enabled = true;
+  const tw = dragPart.targetLocal.clone(); fuselage.localToWorld(tw);
+  if (dragPart.mesh.position.distanceTo(tw) < 1.2) attachPart(dragPart);
+  dragPart = null;
+}
+
+renderer.domElement.addEventListener('pointerdown', onDown);
+renderer.domElement.addEventListener('pointermove', onMove);
+renderer.domElement.addEventListener('pointerup', onUp);
+
+/* ════════════════════════════════════════════
+   重置
+   ════════════════════════════════════════════ */
+function resetAll() {
+  parts.forEach(p => {
+    if (p.mesh.parent !== scene) {
+      if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
+      scene.add(p.mesh);
+    }
+    p.mesh.position.copy(p.initPos);
+    p.mesh.rotation.set(0, 0, 0);
+    p.attached = false; p._flying = false;
+  });
+  attached = 0;
+}
+
+/* ════════════════════════════════════════════
+   阶段切换
+   ════════════════════════════════════════════ */
+window.goNext = function() {
+  if (!nextOn) return;
+  if (phase === 1) {
+    phase = 2; setNext(false);
+    $togPnl.style.display = 'none';
+    $hint.style.display = 'none';
+    $compare.style.display = 'none';
+    $demoOvl.style.display = 'flex';
+    refreshDots();
+  } else if (phase === 2) {
+    phase = 3; setNext(false);
+    $task.style.display = 'block';
+    $bar.style.display = 'flex';
+    refreshDots();
+    resetAll();
+    fuselage.position.copy(F0); fuselage.rotation.set(0, 0, 0);
+  } else if (phase === 3 && allDone) {
+    phase = 4;
+    $finish.style.display = 'flex';
+    refreshDots();
+  }
+};
+
+window.closeSuccess = () => { $success.style.display = 'none'; setNext(true); };
+window.restart = () => location.reload();
+window.goHome = () => location.reload();
+
+/* ════════════════════════════════════════════
+   主循环
+   ════════════════════════════════════════════ */
+const clock = new THREE.Clock();
+
+(function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  controls.update();
+  updatePhase1(dt);
+  updateDemo(dt);
+  updateLabels();
+
+  // 起飞
+  if (takingOff) {
+    takeoffT += dt;
+    const p = Math.min(takeoffT / 2.5, 1);
+    const ease = 1 - Math.pow(1 - p, 2);
+    fuselage.position.y = F0.y + ease * 5;
+    fuselage.position.x = F0.x + ease * 3;
+    fuselage.position.z = ease * -1;
+    fuselage.rotation.z = ease * -0.2;
+    fuselage.rotation.y = ease * 0.5;
+    if (p >= 1) { takingOff = false; $success.style.display = 'flex'; }
+  }
+
+  renderer.render(scene, camera);
+})();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

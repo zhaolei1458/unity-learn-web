@@ -1,15 +1,25 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { lessonCards } from '../data/courses'
+import { courses, lessonCards } from '../data/courses'
+import { interactiveLessons } from '../data/interactiveLessons'
 import { markCardDone, isCardDone } from '../store/progress'
 import TextCard from './cards/TextCard.vue'
 import QuizCard from './cards/QuizCard.vue'
 import DemoCard from './cards/DemoCard.vue'
 import LifecycleCard from './cards/LifecycleCard.vue'
 import ComponentCard from './cards/ComponentCard.vue'
+import InteractiveLesson from './InteractiveLesson.vue'
 
 const props = defineProps({ lessonId: String })
 const emit = defineEmits(['course', 'home'])
+
+// 判断是否是交互式课程
+const isInteractive = computed(() => {
+  return !!interactiveLessons[props.lessonId]
+})
+const interactiveLesson = computed(() => interactiveLessons[props.lessonId])
+
+// 传统卡片课程
 const cards = computed(() => lessonCards[props.lessonId] || [])
 const index = ref(0)
 const current = computed(() => cards.value[index.value])
@@ -20,7 +30,16 @@ function next() { if (index.value < cards.value.length - 1) index.value++ }
 function prev() { if (index.value > 0) index.value-- }
 </script>
 <template>
-  <div class="lesson">
+  <!-- 交互式课程 -->
+  <InteractiveLesson
+    v-if="isInteractive"
+    :lesson="interactiveLesson"
+    :lessonId="lessonId"
+    @course="emit('course')"
+    @complete="emit('course')"
+  />
+  <!-- 传统卡片课程 -->
+  <div class="lesson" v-else>
     <div class="lesson-top">
       <button class="back" @click="emit('course')">← 返回课程</button>
       <span class="progress">{{ index + 1 }} / {{ cards.length }}</span>
